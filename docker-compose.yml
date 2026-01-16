@@ -1,0 +1,28 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:8
+    container_name: mysql_smatchin
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASS:-userpass}
+      MYSQL_DATABASE: ${DB_NAME:-smatching_db}
+      MYSQL_USER: ${DB_USER:-user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-userpass}
+    command: --sql-mode=""
+    ports:
+      - "3307:3306"
+    volumes:
+    - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+    # - ./backup.sql:/docker-entrypoint-initdb.d/backup.sql
+    # - mysql_data:/var/lib/mysql
+    networks:
+      - backend-net
+volumes:
+  mysql_data:
+
+networks:
+  backend-net:
+    driver: bridge
