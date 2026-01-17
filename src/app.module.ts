@@ -28,15 +28,15 @@ import { join } from 'path';
     MailerModule.forRoot({
       transport: {
         host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
+        port: 465,
+        secure: true,
         auth: {
           user: process.env.MAIL_USER,
           pass: process.env.MAIL_PASS,
         },
       },
       defaults: {
-        from: '"No Reply" <noreply@example.com>',
+        from: '"Smatchin" <noreply@smatchin.com>',
       },
       template: {
         dir: __dirname + '/templates',

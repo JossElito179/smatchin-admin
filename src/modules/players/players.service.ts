@@ -241,7 +241,7 @@ export class PlayersService {
         players.forEach((player) => {
             worksheet.addRow({
                 name: player.name + ' ' + player.first_name,
-                profile: this.getFileNameFromUrl(`http://localhost:3000${player.profil_img!}`) === 'localhost:3000null' ? ' ' : this.getFileNameFromUrl(`http://localhost:3000${player.profil_img!}`) ,
+                profile: this.getFileNameFromUrl(`https://smatchin-admin-production.up.railway.app${player.profil_img!}`) === 'smatchin-admin-production.up.railway.appnull' ? ' ' : this.getFileNameFromUrl(`https://smatchin-admin-production.up.railway.app${player.profil_img!}`) ,
                 category: player.team?.name || 'N/A',
                 type: player.position?.name || 'N/A',
                 accessplus:' ',
@@ -273,7 +273,7 @@ export class PlayersService {
             }
 
             try {
-                const imageBuffer = await this.downloadImage(`http://localhost:3000${player.profil_img!}`);
+                const imageBuffer = await this.downloadImage(`https://smatchin-admin-production.up.railway.app${player.profil_img!}`);
                 const fileName = this.getFileNameFromUrl(player.profil_img!);
                 imgFolder?.file(fileName, imageBuffer);
             } catch (error) {

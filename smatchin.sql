@@ -59,6 +59,7 @@ CREATE INDEX idx_players_position_id ON players(id_positions);
 CREATE INDEX idx_users_username ON users(user_name);
 CREATE INDEX idx_users_phone ON users(phone_number);
 CREATE INDEX idx_users_email ON users(email);
+ALTER TABLE users MODIFY role TINYINT(1) NOT NULL DEFAULT 0;
 
 
 -- 1. Insertion des positions (postes de basket)
