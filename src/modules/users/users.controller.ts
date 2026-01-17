@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, ParseIntPipe, Param, UseInterceptors, UploadedFiles, Put } from '@nestjs/common';
+import { Controller, Post, Body, Get, ParseIntPipe, Param, UseInterceptors, UploadedFiles, Put, Delete } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-users.dto';
 import { SearchTeamDto } from '../teams/dto/search-team.dto';
@@ -38,6 +38,11 @@ export class UsersController {
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id_user: number) {
     return this.usersService.findOne(id_user);
+  }
+
+  @Delete(':id')
+  async remove(@Param('id', ParseIntPipe) id_user: number) {
+    return this.usersService.remove(id_user);
   }
 
   @Put(':id')
