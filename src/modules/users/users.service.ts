@@ -7,6 +7,7 @@ import * as bcrypt from 'bcrypt';
 import axios from 'axios';
 import { MailerService } from '@nestjs-modules/mailer/dist/mailer.service';
 import { FileManager } from '../services/file-manager';
+import { EmailService } from '../services/brevo.email.service';
 
 @Injectable()
 export class UsersService {
@@ -14,7 +15,8 @@ export class UsersService {
         @InjectRepository(User)
         private repo: Repository<User>,
         private readonly mailerService: MailerService,
-        private fileManager: FileManager
+        private fileManager: FileManager,
+        private readonly brevoMailer: EmailService
     ) { }
 
     async findByUsername(user_name: string): Promise<User | null> {
@@ -75,24 +77,95 @@ export class UsersService {
 
         const savedUser = await this.repo.save(user);
 
-        const message =
-            `Bonjour ${data.first_name},
+        const message = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h2 style="color: #333; margin-bottom: 10px;">Bienvenue sur Smatchin Admin</h2>
+        <div style="height: 3px; width: 50px; background-color: #007bff; margin: 0 auto;"></div>
+    </div>
+    
+    <p style="font-size: 16px; color: #555; margin-bottom: 20px;">
+        Bonjour <strong>${data.first_name}</strong>,
+    </p>
+    
+    <p style="font-size: 15px; color: #555; margin-bottom: 25px; line-height: 1.6;">
+        Votre compte Smatchin Admin a été créé avec succès.
+    </p>
+    
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 25px; border-left: 4px solid #007bff;">
+        <p style="margin: 0 0 10px 0; color: #333;">
+            <strong>Identifiant :</strong> 
+            <span style="font-family: monospace; background-color: #e9ecef; padding: 5px 10px; border-radius: 3px; display: inline-block; margin-left: 10px;">
+                ${data.user_name}
+            </span>
+        </p>
+        <p style="margin: 0; color: #333;">
+            <strong>Mot de passe :</strong>
+            <span style="font-family: monospace; background-color: #e9ecef; padding: 5px 10px; border-radius: 3px; display: inline-block; margin-left: 10px; color: #dc3545; font-weight: bold;">
+                ${generatedPassword}
+            </span>
+        </p>
+    </div>
+    
+    <div style="background-color: #e7f3ff; padding: 20px; border-radius: 5px; margin-bottom: 30px; border: 1px solid #b6d4fe;">
+        <p style="margin: 0 0 15px 0; color: #084298; font-weight: bold;">
+            🔗 Lien de connexion :
+        </p>
+        <a href="https://smatchin-front-production.up.railway.app" 
+           style="display: inline-block; padding: 12px 25px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; margin-bottom: 15px;">
+            Accéder à Smatchin Admin
+        </a>
+        <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">
+            ou copiez ce lien : 
+            <span style="font-family: monospace; color: #0056b3; word-break: break-all;">
+                https://smatchin-front-production.up.railway.app
+            </span>
+        </p>
+    </div>
 
-            Votre compte Smatchin Admin a été créé avec succès.
+    <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+    
+    <p style="color: #777; font-size: 14px; margin-bottom: 5px;">
+        Cordialement,
+    </p>
+    <p style="color: #555; font-weight: bold; margin-top: 0;">
+        L'équipe Check Event
+    </p>
+    
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center; color: #888; font-size: 12px;">
+        <p style="margin: 0;">
+            Cet email a été envoyé automatiquement, merci de ne pas y répondre.
+        </p>
+    </div>
+</div>
+`;
 
-            Identifiant : ${data.user_name}
-            Mot de passe : ${generatedPassword}
+        const plainTextMessage = `Bonjour ${data.first_name},
 
-            Vous pouvez vous connecter via le lien suivant :
-            https://www.youtube.com/watch?v=QmmVJnlSTuQ&list=RD3shMD13Y2uU&index=3
+Votre compte Smatchin Admin a été créé avec succès.
 
-            Nous vous recommandons de modifier votre mot de passe après votre première connexion.
+Identifiant : ${data.user_name}
+Mot de passe : ${generatedPassword}
 
-            Cordialement,
-            L’équipe Smatchin`;
-        console.log(generatedPassword)
+Vous pouvez vous connecter via le lien suivant :
+https://smatchin-front-production.up.railway.app
+
+Nous vous recommandons de modifier votre mot de passe après votre première connexion.
+
+Cordialement,
+L'équipe Check Event`;
+
+        console.log(generatedPassword);
+
         try {
-            await this.sendMail(data.email, message);
+            await this.brevoMailer.sendEmail(
+                data.email,
+                'Compte Smatchin Admin - Vos identifiants',
+                message,
+                {
+                    text: plainTextMessage 
+                }
+            );
         } catch (error) {
             console.error('Erreur lors de l\'envoi du mail:', error);
         }

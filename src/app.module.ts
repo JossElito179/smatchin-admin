@@ -26,19 +26,19 @@ import { join } from 'path';
       ignoreEnvFile: false,
     }),
     MailerModule.forRoot({
-  transport: {
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // IMPORTANT
-    auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASS, // Gmail APP PASSWORD
-    },
-    requireTLS: true,
-    connectionTimeout: 20000,
-    greetingTimeout: 20000,
-    socketTimeout: 20000,
-  },
+      transport: {
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: process.env.MAIL_USER,
+          pass: process.env.MAIL_PASS,
+        },
+        requireTLS: true,
+        connectionTimeout: 20000,
+        greetingTimeout: 20000,
+        socketTimeout: 20000,
+      },
       defaults: {
         from: '"Check mg" <noreply@checkmg.com>',
       },
