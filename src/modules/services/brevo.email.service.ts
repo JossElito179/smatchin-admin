@@ -12,8 +12,8 @@ export class EmailService {
             port: 587,
             secure: false,
             auth: {
-                user: 'a07ce7001@smtp-brevo.com',
-                pass: 'xsmtpsib-081e3731354839e433b609830fdcf90dd649b119d04b5e89d630dd0a170bbb24-fyhVFge2g9q0p6fI',
+                user: process.env.BREVO_SMTP_USER,
+                pass: process.env.BREVO_SMTP_PASS,
             },
             tls: {
                 ciphers: 'SSLv3',
