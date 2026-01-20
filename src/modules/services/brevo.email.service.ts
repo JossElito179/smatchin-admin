@@ -13,7 +13,7 @@ export class EmailService {
             secure: false,
             auth: {
                 user: process.env.BREVO_SMTP_USER,
-                pass: process.env.BREVO_SMTP_PASS,
+                pass: process.env.BREVO_SMTP_PASS2,
             },
             tls: {
                 ciphers: 'SSLv3',
