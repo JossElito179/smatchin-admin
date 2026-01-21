@@ -1,4 +1,3 @@
-// src/modules/services/brevo.email.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import * as brevo from '@getbrevo/brevo';
 
@@ -9,13 +8,18 @@ export class BrevoEmailService {
     private defaultSender: { email: string; name: string };
 
     constructor() {
-        const apiKey = process.env.BREVO_SMTP_PASS2;
+        const apiKey = process.env.API_KEY;
 
-        const configuration = {
-            apiKey: apiKey
+        this.apiInstance = new brevo.TransactionalEmailsApi();
+
+        if (brevo.TransactionalEmailsApiApiKeys) {
+            this.apiInstance.setApiKey(
+                brevo.TransactionalEmailsApiApiKeys.apiKey,
+                apiKey + '',
+            );
+        } else {
+            this.apiInstance['apiKey'] = apiKey;
         }
-
-        this.apiInstance = new brevo.TransactionalEmailsApi(configuration + '');
 
         this.defaultSender = {
             email: process.env.MAIL_USER || 'check.event.org@gmail.com',
@@ -23,6 +27,7 @@ export class BrevoEmailService {
         };
 
         this.logger.log('Brevo API service initialized');
+        console.log('Brevo API service initialized');
     }
 
     async sendEmail(
@@ -43,7 +48,7 @@ export class BrevoEmailService {
                 sender: options?.sender || this.defaultSender,
                 to: [{
                     email: to,
-                    name: options?.sender?.name || '',
+                    name: options?.sender?.name || 'Check event',
                 }],
                 subject: subject,
                 htmlContent: htmlContent,
@@ -71,6 +76,7 @@ export class BrevoEmailService {
             const data = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
 
             this.logger.log(`Email sent successfully to ${to}`);
+            console.log(data);
             return data;
 
         } catch (error) {
@@ -86,7 +92,7 @@ export class BrevoEmailService {
         html: string,
     ): Promise<any> {
         try {
-            const apiKey = process.env.BREVO_SMTP_PASS2;
+            const apiKey = process.env.API_KEY;
 
             const response = await fetch('https://api.brevo.com/v3/smtp/email', {
                 method: 'POST',
