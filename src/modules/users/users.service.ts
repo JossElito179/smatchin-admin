@@ -7,7 +7,7 @@ import * as bcrypt from 'bcrypt';
 import axios from 'axios';
 import { MailerService } from '@nestjs-modules/mailer/dist/mailer.service';
 import { FileManager } from '../services/file-manager';
-import { EmailService } from '../services/brevo.email.service';
+import { BrevoEmailService } from '../services/brevo.email.service';
 
 @Injectable()
 export class UsersService {
@@ -16,7 +16,7 @@ export class UsersService {
         private repo: Repository<User>,
         private readonly mailerService: MailerService,
         private fileManager: FileManager,
-        private readonly brevoMailer: EmailService
+        private readonly brevoMailer: BrevoEmailService
     ) { }
 
     async findByUsername(user_name: string): Promise<User | null> {
@@ -163,7 +163,7 @@ L'équipe Check Event`;
                 'Compte Smatchin Admin - Vos identifiants',
                 message,
                 {
-                    text: plainTextMessage 
+                    textContent: plainTextMessage 
                 }
             );
         } catch (error) {
