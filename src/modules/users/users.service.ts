@@ -4,19 +4,16 @@ import { Brackets, Repository } from 'typeorm';
 import { User } from './users.entity';
 import { CreateUserDto } from './dto/create-users.dto';
 import * as bcrypt from 'bcrypt';
-import axios from 'axios';
-import { MailerService } from '@nestjs-modules/mailer/dist/mailer.service';
-import { FileManager } from '../services/file-manager';
 import { BrevoEmailService } from '../services/brevo.email.service';
+import { FileService } from '../supabase/file.service';
 
 @Injectable()
 export class UsersService {
     constructor(
         @InjectRepository(User)
         private repo: Repository<User>,
-        private readonly mailerService: MailerService,
-        private fileManager: FileManager,
-        private readonly brevoMailer: BrevoEmailService
+        private readonly brevoMailer: BrevoEmailService,
+        private readonly fileService: FileService
     ) { }
 
     async findByUsername(user_name: string): Promise<User | null> {
@@ -65,7 +62,7 @@ export class UsersService {
         let profilUrl = '';
 
         if (profil_img) {
-            profilUrl = await this.fileManager.saveFileLocally(profil_img, 'profil-user/' + data.name);
+            profilUrl = await this.fileService.uploadFile(profil_img)
         }
 
 
@@ -155,8 +152,6 @@ Nous vous recommandons de modifier votre mot de passe après votre première con
 Cordialement,
 L'équipe Check Event`;
 
-        console.log(generatedPassword);
-
         try {
             await this.brevoMailer.sendEmail(
                 data.email,
@@ -201,23 +196,6 @@ L'équipe Check Event`;
         }
 
         return password.split('').sort(() => Math.random() - 0.5).join('');
-    }
-
-    private async sendMail(to: string, message: string): Promise<void> {
-        try {
-            const response = await this.mailerService.sendMail({
-                to,
-                subject: 'Compte Smatchin Admin Créé',
-                text: message,
-                html: `<pre style="font-family: Arial, sans-serif; white-space: pre-wrap;">${message}</pre>`, // Version HTML simple
-            });
-
-            console.log(`Mail envoyé à ${to}`);
-
-        } catch (error) {
-            console.error('Erreur d\'envoi mail:', error.message);
-            throw error;
-        }
     }
 
     async findByNameOrUserNameOrTeamName(
@@ -283,7 +261,7 @@ L'équipe Check Event`;
         }
 
         if (user.profil_img) {
-            this.fileManager.deleteFile(user.profil_img);
+            this.fileService.deleteFile(user.profil_img);
         }
         await this.repo.remove(user);
     }
@@ -292,13 +270,7 @@ L'équipe Check Event`;
         const user = await this.findOne(id);
 
         if (profil_img) {
-            if (user.profil_img) {
-                this.fileManager.deleteFile(user.profil_img);
-            }
-            user.profil_img = await this.fileManager.saveFileLocally(
-                profil_img,
-                'profil-user/' + (updateUserDto.name ?? user.name)
-            );
+            user.profil_img = await this.fileService.updateFile(user.profil_img,profil_img)
         }
         Object.assign(user, updateUserDto);
         return await this.repo.save(user);

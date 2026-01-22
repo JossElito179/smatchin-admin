@@ -10,6 +10,7 @@ import * as ExcelJS from 'exceljs';
 import { Response } from 'express';
 import JSZip from "jszip";
 import axios from "axios";
+import { FileService } from "../supabase/file.service";
 
 
 @Injectable()
@@ -22,7 +23,8 @@ export class PlayersService {
         private teamRepo: Repository<Team>,
         @InjectRepository(Positions)
         private positionRepo: Repository<Positions>,
-        private fileManager: FileManager
+        private fileManager: FileManager,
+        private fileService: FileService
     ) { }
 
     async create(createPlayersDto: CreatePlayersDto, profil_img?: Express.Multer.File, bacc_file?: Express.Multer.File, cin_file?: Express.Multer.File): Promise<Players> {
@@ -47,14 +49,14 @@ export class PlayersService {
         let cinURL = '';
 
         if (profil_img) {
-            profilUrl = await this.fileManager.saveFileLocally(profil_img, 'profil/' + CreatePlayersDto.name);
+            profilUrl = await this.fileService.uploadFile(profil_img);
         }
 
         if (bacc_file) {
-            baccURL = await this.fileManager.saveFileLocally(bacc_file, 'bac/' + CreatePlayersDto.name);
+            baccURL = await this.fileService.uploadFile(bacc_file);
         }
         if (cin_file) {
-            cinURL = await this.fileManager.saveFileLocally(cin_file, 'cin/' + CreatePlayersDto.name);
+            cinURL = await this.fileService.uploadFile(cin_file);
         }
 
 
@@ -137,15 +139,15 @@ export class PlayersService {
         }
 
         if (player.profil_img) {
-            this.fileManager.deleteFile(player.profil_img);
+            this.fileService.deleteFile(player.profil_img);
         }
 
         if (player.bacc_file) {
-            this.fileManager.deleteFile(player.bacc_file);
+            this.fileService.deleteFile(player.bacc_file);
         }
 
         if (player.cin_file) {
-            this.fileManager.deleteFile(player.cin_file);
+            this.fileService.deleteFile(player.cin_file);
         }
         await this.repo.remove(player);
     }
@@ -154,40 +156,21 @@ export class PlayersService {
         const player = await this.findOne(id);
 
         if (profil_img) {
-            if (player.profil_img) {
-                this.fileManager.deleteFile(player.profil_img);
-            }
-            player.profil_img = await this.fileManager.saveFileLocally(
-                profil_img,
-                'profil/' + (updatePlayersDto.name ?? player.name)
-            );
+            player.profil_img = await this.fileService.updateFile(player.profil_img, profil_img);
         }
 
         if (bacc_file) {
-            if (player.bacc_file) {
-                this.fileManager.deleteFile(player.bacc_file);
-            }
-            player.bacc_file = await this.fileManager.saveFileLocally(
-                bacc_file,
-                'bac/' + (updatePlayersDto.name ?? player.name)
-            );
+            player.bacc_file = await this.fileService.updateFile(player.bacc_file, bacc_file);
         }
 
         if (cin_file) {
-            if (player.cin_file) {
-                this.fileManager.deleteFile(player.cin_file);
-            }
-            player.cin_file = await this.fileManager.saveFileLocally(
-                cin_file,
-                'cin/' + (updatePlayersDto.name ?? player.name)
-            );
+            player.cin_file = await this.fileService.updateFile(player.cin_file, cin_file);
         }
 
 
         Object.assign(player, updatePlayersDto);
         return await this.repo.save(player);
     }
-
 
 
     async exportPlayersWithImages(res: Response, id_teams: number): Promise<void> {
@@ -198,7 +181,7 @@ export class PlayersService {
                 order: { id_players: 'ASC' },
             });
 
-            console.log(players);
+            console.log('Players found:', players.length);
 
             const zip = new JSZip();
 
@@ -210,16 +193,17 @@ export class PlayersService {
             const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
 
             res.setHeader('Content-Type', 'application/zip');
-            res.setHeader('Content-Disposition', 'attachment; filename=players_with_images.zip');
+            res.setHeader('Content-Disposition', `attachment; filename=players_team_${id_teams}.zip`);
             res.setHeader('Content-Length', zipBuffer.length);
 
             res.end(zipBuffer);
         } catch (error) {
+            console.error('Export failed:', error);
             throw new Error(`Failed to export players with images: ${error.message}`);
         }
     }
 
-    private async createExcelFile(players: Players[]): Promise<Buffer> {
+    private async createExcelFile(players: Players[]) {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Players');
 
@@ -239,114 +223,155 @@ export class PlayersService {
         };
 
         players.forEach((player) => {
+            const imageName = player.profil_img
+                ? this.getImageFileName(player)
+                : 'Pas d\'image';
+
             worksheet.addRow({
                 name: player.name + ' ' + player.first_name,
-                profile: this.getFileNameFromUrl(`https://smatchin-admin-production.up.railway.app${player.profil_img!}`) === 'smatchin-admin-production.up.railway.appnull' ? ' ' : this.getFileNameFromUrl(`https://smatchin-admin-production.up.railway.app${player.profil_img!}`) ,
+                profile: imageName,
                 category: player.team?.name || 'N/A',
                 type: player.position?.name || 'N/A',
-                accessplus:' ',
+                accessplus: ' ',
             });
         });
 
-
         worksheet.columns.forEach((column) => {
-            const maxLength = column.values
-                ? Math.max(...column.values.map(v => v ? v.toString().length : 0))
-                : 0;
-            column.width = Math.min(Math.max(maxLength + 2, 10), 50);
+            let maxLength = 0;
+            if (column) {
+                column.eachCell?.({ includeEmpty: true }, (cell) => {
+                    const columnLength = cell.value ? cell.value.toString().length : 10;
+                    if (columnLength > maxLength) {
+                        maxLength = columnLength;
+                    }
+                });
+                column.width = Math.min(Math.max(maxLength + 2, 10), 50);
+            }
         });
 
-        return workbook.xlsx.writeBuffer() as unknown as Promise<Buffer>;
+        return await workbook.xlsx.writeBuffer();
     }
 
     private async addImagesToZip(zip: JSZip, players: Players[]): Promise<void> {
         const imgFolder = zip.folder('images');
 
-        const downloadPromises = players.map(async (player) => {
-            const hasValidImage = this.hasValidProfileImage(player.profil_img);
+        if (!Array.isArray(players)) {
+            console.error('Players is not an array');
+            return;
+        }
 
-            if (!hasValidImage) {
-                const placeholder = this.createPlaceholderImage();
-                const fileName = `player_${player.id_players}_no_image.png`;
-                imgFolder?.file(fileName, placeholder);
-                return;
-            }
+        console.log(`Processing images for ${players.length} players`);
 
-            try {
-                const imageBuffer = await this.downloadImage(`https://smatchin-admin-production.up.railway.app${player.profil_img!}`);
-                const fileName = this.getFileNameFromUrl(player.profil_img!);
-                imgFolder?.file(fileName, imageBuffer);
-            } catch (error) {
-                console.error(`Failed to download image for player ${player.id_players}:`, error);
-                const placeholder = this.createPlaceholderImage();
-                const fileName = `player_${player.id_players}_error.png`;
-                imgFolder?.file(fileName, placeholder);
-            }
+        const promises = players.map(async (player) => {
+            return this.processSinglePlayerImage(player, imgFolder);
         });
 
-        await Promise.all(downloadPromises);
+        await Promise.all(promises);
     }
 
-    private hasValidProfileImage(imageUrl: string | null | undefined): boolean {
-        if (!imageUrl) return false;
-
-        const trimmed = imageUrl.trim();
-        if (trimmed === '') return false;
-
-        const imagePatterns = [
-            /\.(jpg|jpeg|png|gif|bmp|webp)$/i,
-            /^data:image\//i,
-            /^https?:\/\/.*\.(jpg|jpeg|png|gif|bmp|webp)/i,
-            /^\/uploads\//,
-            /^\.\.?\/.*\.(jpg|jpeg|png|gif|bmp|webp)$/i
-        ];
-
-        return imagePatterns.some(pattern => pattern.test(trimmed));
-    }
-
-    private async downloadImage(url: string): Promise<Buffer> {
-        if (url.startsWith('http')) {
-            const response = await axios.get(url, { responseType: 'arraybuffer' });
-            return Buffer.from(response.data);
-        }
-
-        if (url.startsWith('/') || url.startsWith('./') || url.startsWith('../')) {
-            const fs = require('fs');
-            const path = require('path');
-
-            const absolutePath = path.resolve(url);
-
-            if (fs.existsSync(absolutePath)) {
-                return fs.readFileSync(absolutePath);
-            } else {
-                throw new Error(`File not found: ${absolutePath}`);
+    private async processSinglePlayerImage(player: Players, imgFolder: JSZip | null): Promise<void> {
+        if (player.profil_img && this.isSupabaseUrl(player.profil_img)) {
+            try {
+                const imageBuffer = await this.downloadImageFromSupabase(player.profil_img);
+                const fileName = this.getImageFileName(player);
+                imgFolder?.file(fileName, imageBuffer);
+            } catch (error) {
+                console.error(`Error downloading image for player ${player.id_players}:`, error.message);
+                this.addPlaceholderImage(player, imgFolder, 'error');
             }
+        } else {
+            this.addPlaceholderImage(player, imgFolder, 'no_image');
         }
-
-        if (url.startsWith('data:image')) {
-            const base64Data = url.replace(/^data:image\/\w+;base64,/, '');
-            return Buffer.from(base64Data, 'base64');
-        }
-
-        throw new Error(`Unsupported image format: ${url}`);
     }
 
-    private getFileNameFromUrl(url: string): string {
-        if (url.includes('/')) {
-            const parts = url.split('/');
-            return parts[parts.length - 1].split('?')[0];
-        }
-        return url;
+    private addPlaceholderImage(player: Players, imgFolder: JSZip | null, type: 'no_image' | 'error'): void {
+        const placeholder = this.createPlaceholderImage(player);
+        const fileName = `player_${player.id_players}_${type}.png`;
+        imgFolder?.file(fileName, placeholder);
     }
 
-    private createPlaceholderImage(): Buffer {
-        const svg = `<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100" height="100" fill="#ccc"/>
-      <text x="50" y="50" text-anchor="middle" dy=".3em" font-family="Arial" font-size="12">No Image</text>
-    </svg>`;
+    private async downloadImageFromSupabase(imageUrl: string): Promise<Buffer> {
+        try {
+            if (imageUrl.includes('supabase.co/storage/v1/object/public/')) {
+                const response = await axios.get(imageUrl, {
+                    responseType: 'arraybuffer',
+                    timeout: 10000,
+                    headers: {
+                        'Accept': 'image/*'
+                    }
+                });
+
+                return Buffer.from(response.data);
+            }
+
+            if (!imageUrl.includes('http')) {
+                throw new Error('Image URL format not supported');
+            }
+
+            const response = await axios.get(imageUrl, {
+                responseType: 'arraybuffer',
+                timeout: 10000
+            });
+
+            return Buffer.from(response.data);
+        } catch (error) {
+            console.error(`Download failed for ${imageUrl}:`, error.message);
+            throw new Error(`Failed to download image: ${error.message}`);
+        }
+    }
+
+    private isSupabaseUrl(url: string): boolean {
+        return url.includes('supabase.co') || url.includes('supabase.in') || url.includes('supabase.com');
+    }
+
+    private extractFileNameFromSupabaseUrl(url: string): string {
+        try {
+            if (url.includes('/object/public/')) {
+                const parts = url.split('/');
+                const bucketIndex = parts.indexOf('public') + 1;
+                if (bucketIndex < parts.length) {
+                    return parts.slice(bucketIndex).join('/');
+                }
+            }
+
+            const urlObj = new URL(url);
+            const pathname = urlObj.pathname;
+            return pathname.split('/').pop() || 'image.jpg';
+        } catch {
+            return url.split('/').pop() || 'image.jpg';
+        }
+    }
+
+    private getImageFileName(player: Players): string {
+        const name = `${player.name}_${player.first_name}`.replace(/[^a-zA-Z0-9]/g, '_');
+        const ext = this.getImageExtension(player.profil_img || '');
+        return `player_${player.id_players}_${name}${ext}`;
+    }
+
+    private getImageExtension(url: string): string {
+        const match = url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i);
+        if (match) {
+            return match[1].toLowerCase() === 'jpeg' ? '.jpg' : `.${match[1].toLowerCase()}`;
+        }
+        return '.jpg'; 
+    }
+
+    private createPlaceholderImage(player?: Players): Buffer {
+        const playerName = player ? `${player.name} ${player.first_name}`.substring(0, 20) : 'No Image';
+        const playerId = player ? `ID: ${player.id_players}` : '';
+
+        const svg = `<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+            <rect width="200" height="200" fill="#f0f0f0"/>
+            <circle cx="100" cy="70" r="30" fill="#ccc"/>
+            <rect x="70" y="100" width="60" height="40" fill="#ddd"/>
+            <text x="100" y="165" text-anchor="middle" font-family="Arial" font-size="12" fill="#666">
+                ${playerName}
+            </text>
+            <text x="100" y="180" text-anchor="middle" font-family="Arial" font-size="10" fill="#999">
+                ${playerId}
+            </text>
+        </svg>`;
 
         return Buffer.from(svg);
     }
-
-
 }

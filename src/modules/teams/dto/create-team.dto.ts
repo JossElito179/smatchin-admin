@@ -4,6 +4,8 @@ export class CreateTeamDto {
     @IsString()
     name: string;
 
+    is_admin: boolean;
+
     @IsOptional()
     logo: string | undefined;
 

@@ -6,6 +6,7 @@ import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 import { User } from '../users/users.entity';
 import { FileManager } from '../services/file-manager';
+import { FileService } from '../supabase/file.service';
 
 @Injectable()
 export class TeamsService {
@@ -14,7 +15,7 @@ export class TeamsService {
         private teamsRepository: Repository<Team>,
         @InjectRepository(User)
         private usersRepository: Repository<User>,
-        private fileManager: FileManager
+        private fileService: FileService
     ) { }
 
     async findAll(): Promise<Team[]> {
@@ -44,17 +45,18 @@ export class TeamsService {
         let teamImgUrl = '';
 
         if (logoFile) {
-            logoUrl = await this.fileManager.saveFileLocally(logoFile, 'logos/' + createTeamDto.name);
+            logoUrl = await this.fileService.uploadFile(logoFile);
         }
 
         if (teamImgFile) {
-            teamImgUrl = await this.fileManager.saveFileLocally(teamImgFile, 'team-images/' + createTeamDto.name);
+            teamImgUrl = await this.fileService.uploadFile(teamImgFile);
         }
 
         const team = this.teamsRepository.create({
             name: createTeamDto.name,
             id_users: createTeamDto.id_users,
             is_male: createTeamDto.is_male,
+            is_admin: createTeamDto.is_admin,
             logo: logoUrl,
             team_img: teamImgUrl,
             user
@@ -161,6 +163,9 @@ export class TeamsService {
             throw new NotFoundException(`Team with ID ${id} not found`);
         }
 
+        if (updateTeamDto.is_admin) {
+            team.is_admin = updateTeamDto.is_admin;
+        }
         if (updateTeamDto.name !== undefined) {
             team.name = updateTeamDto.name;
         }
@@ -169,23 +174,11 @@ export class TeamsService {
         }
 
         if (logoFile) {
-            if (team.logo) {
-                this.fileManager.deleteFile(team.logo);
-            }
-            team.logo = await this.fileManager.saveFileLocally(
-                logoFile,
-                'logos/' + (updateTeamDto.name ?? team.name)
-            );
+            team.logo = await this.fileService.updateFile(team.logo, logoFile)
         }
 
         if (teamImgFile) {
-            if (team.team_img) {
-                this.fileManager.deleteFile(team.team_img);
-            }
-            team.team_img = await this.fileManager.saveFileLocally(
-                teamImgFile,
-                'team-images/' + (updateTeamDto.name ?? team.name)
-            );
+            team.team_img = await this.fileService.updateFile(team.team_img, teamImgFile);
         }
 
         return this.teamsRepository.save(team);
@@ -200,11 +193,11 @@ export class TeamsService {
 
         if (team.logo) {
 
-            this.fileManager.deleteFile(team.logo);
+            this.fileService.deleteFile(team.logo);
         }
 
         if (team.team_img) {
-            this.fileManager.deleteFile(team.team_img);
+            this.fileService.deleteFile(team.team_img);
         }
 
         await this.teamsRepository.remove(team);

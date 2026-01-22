@@ -10,6 +10,9 @@ export class Team {
     @Column({ length: 50 })
     name: string;
 
+    @Column({ type: 'boolean' })
+    is_admin: boolean;
+
     @Column({ type: 'text', nullable: true })
     logo: string;
 

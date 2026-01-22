@@ -22,6 +22,7 @@ CREATE TABLE users (
 CREATE TABLE teams (
     id_teams INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
+    is_admin boolean not null DEFAULT 0,
     logo TEXT,
     team_img TEXT,
     id_users INT NOT NULL,
@@ -75,6 +76,7 @@ INSERT INTO users (id_users, name, first_name, user_name, role, phone_number, pa
 (4, 'Bernard', 'Luc', 'lbernard', false, '0634567890', '$2b$10$.7OvJx8g3sBKHQ.VvcLoCetN9RLccvEDe2dNfXGfTOG5B5RbxJ.1u', NULL, 'luc.bernard@club.com'),
 (5, 'Petit', 'Marc', 'mpetit', true, '0645678901', '$2b$10$.7OvJx8g3sBKHQ.VvcLoCetN9RLccvEDe2dNfXGfTOG5B5RbxJ.1u', NULL, 'marc.petit@club.com'),
 (6, 'Durand', 'Thomas', 'tdurand', false, '0656789012', '$2b$10$.7OvJx8g3sBKHQ.VvcLoCetN9RLccvEDe2dNfXGfTOG5B5RbxJ.1u', NULL, 'thomas.durand@club.com');
+
 -- 3. Insertion des équipes
 INSERT INTO teams (id_teams, name, logo, is_male, id_users) VALUES
 (1, 'Les Aigles', NULL, true, 2),
@@ -132,6 +134,8 @@ VALUES
 (30, 'Gomez', 'Luis', '2003-04-03', NULL, NULL, NULL, 5, 1, false);
 
 
+SET SQL_SAFE_UPDATES = 0;
+
 SET FOREIGN_KEY_CHECKS = 0;
 
 DELETE FROM players;
@@ -140,3 +144,4 @@ DELETE FROM positions;
 DELETE FROM users;
 
 SET FOREIGN_KEY_CHECKS = 1;
+SET SQL_SAFE_UPDATES = 1;
