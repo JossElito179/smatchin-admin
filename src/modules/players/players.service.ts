@@ -11,6 +11,7 @@ import { Response } from 'express';
 import JSZip from "jszip";
 import axios from "axios";
 import { FileService } from "../supabase/file.service";
+import { count } from "console";
 
 
 @Injectable()
@@ -27,8 +28,9 @@ export class PlayersService {
         private fileService: FileService
     ) { }
 
-    async create(createPlayersDto: CreatePlayersDto, profil_img?: Express.Multer.File, bacc_file?: Express.Multer.File, cin_file?: Express.Multer.File): Promise<Players> {
+    async create(createPlayersDto: CreatePlayersDto, profil_img?: Express.Multer.File, bacc_file?: Express.Multer.File, cin_file?: Express.Multer.File) {
         const team = await this.teamRepo.findOne({
+            relations: { players: true },
             where: { id: createPlayersDto.id_teams }
         });
 
@@ -38,6 +40,11 @@ export class PlayersService {
 
         if (!team) {
             throw new NotFoundException(`Team with ID ${createPlayersDto.id_teams} not found`);
+        } else if (team?.players.length == 15) {
+            return {
+                code: 1,
+                message: 'You already have 15 members. Please remove one if you wish to add another player to your team.'
+            }
         }
 
         if (!position) {
@@ -68,7 +75,6 @@ export class PlayersService {
             team,
             position
         });
-
         return await this.repo.save(player);
     }
 
@@ -353,7 +359,7 @@ export class PlayersService {
         if (match) {
             return match[1].toLowerCase() === 'jpeg' ? '.jpg' : `.${match[1].toLowerCase()}`;
         }
-        return '.jpg'; 
+        return '.jpg';
     }
 
     private createPlaceholderImage(player?: Players): Buffer {

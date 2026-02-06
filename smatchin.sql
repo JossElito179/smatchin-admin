@@ -71,11 +71,11 @@ INSERT INTO positions (id_positions, name, acronym) VALUES
 
 -- 2. Insertion des utilisateurs (entraîneurs/admin)
 INSERT INTO users (id_users, name, first_name, user_name, role, phone_number, password, profil_img, email) VALUES
-(2, 'Dupont', 'Jean', 'jdupont', true, '0612345678', '$2b$10$.7OvJx8g3sBKHQ.VvcLoCetN9RLccvEDe2dNfXGfTOG5B5RbxJ.1u', NULL, 'jean.dupont@club.com'),
-(3, 'Martin', 'Pierre', 'pmartin', false, '0623456789', '$2b$10$.7OvJx8g3sBKHQ.VvcLoCetN9RLccvEDe2dNfXGfTOG5B5RbxJ.1u', NULL, 'pierre.martin@club.com'),
-(4, 'Bernard', 'Luc', 'lbernard', false, '0634567890', '$2b$10$.7OvJx8g3sBKHQ.VvcLoCetN9RLccvEDe2dNfXGfTOG5B5RbxJ.1u', NULL, 'luc.bernard@club.com'),
-(5, 'Petit', 'Marc', 'mpetit', true, '0645678901', '$2b$10$.7OvJx8g3sBKHQ.VvcLoCetN9RLccvEDe2dNfXGfTOG5B5RbxJ.1u', NULL, 'marc.petit@club.com'),
-(6, 'Durand', 'Thomas', 'tdurand', false, '0656789012', '$2b$10$.7OvJx8g3sBKHQ.VvcLoCetN9RLccvEDe2dNfXGfTOG5B5RbxJ.1u', NULL, 'thomas.durand@club.com');
+(1, 'User 1', 'admin 1', 'jhoncena', true, '1', '$2b$10$.7OvJx8g3sBKHQ.VvcLoCetN9RLccvEDe2dNfXGfTOG5B5RbxJ.1u', NULL, 'jhon.cena@club.com'),
+(2, 'User 2', 'admin 2', 'ljames', true, '2', '$2b$10$.7OvJx8g3sBKHQ.VvcLoCetN9RLccvEDe2dNfXGfTOG5B5RbxJ.1u', NULL, 'lebron.james@club.com'),
+(3, 'User 3', 'admin 3', 'lmessi', true, '3', '$2b$10$.7OvJx8g3sBKHQ.VvcLoCetN9RLccvEDe2dNfXGfTOG5B5RbxJ.1u', NULL, 'lionel.messi@club.com');
+-- (5, 'Petit', 'Marc', 'mpetit', true, '0645678901', '$2b$10$.7OvJx8g3sBKHQ.VvcLoCetN9RLccvEDe2dNfXGfTOG5B5RbxJ.1u', NULL, 'marc.petit@club.com'),
+-- (6, 'Durand', 'Thomas', 'tdurand', false, '0656789012', '$2b$10$.7OvJx8g3sBKHQ.VvcLoCetN9RLccvEDe2dNfXGfTOG5B5RbxJ.1u', NULL, 'thomas.durand@club.com');
 
 -- 3. Insertion des équipes
 INSERT INTO teams (id_teams, name, logo, is_male, id_users) VALUES
