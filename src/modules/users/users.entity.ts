@@ -17,6 +17,9 @@ export class User {
 
   @Column({ type: 'boolean' })
   role: boolean;
+  
+  @Column({ type: 'boolean' })
+  isStaff: boolean;
 
   @Column({ length: 100, unique: true })
   phone_number: string;

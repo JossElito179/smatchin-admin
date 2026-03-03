@@ -69,6 +69,10 @@ INSERT INTO positions (id_positions, name, acronym) VALUES
 (2, 'Staff', 'SF'),
 (3, 'Coach', 'CH');
 
+INSERT INTO positions (id_positions, name, acronym) VALUES
+(4, 'Stand', 'SD'),
+(5, 'Guest', 'GT');
+
 -- 2. Insertion des utilisateurs (entraîneurs/admin)
 INSERT INTO users (id_users, name, first_name, user_name, role, phone_number, password, profil_img, email) VALUES
 (1, 'User 1', 'admin 1', 'jhoncena', true, '1', '$2b$10$.7OvJx8g3sBKHQ.VvcLoCetN9RLccvEDe2dNfXGfTOG5B5RbxJ.1u', NULL, 'jhon.cena@club.com'),
