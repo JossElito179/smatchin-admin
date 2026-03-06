@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { Repository } from "typeorm";
+import { DataSource, Repository } from "typeorm";
 import { Players } from "./players.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Team } from "../teams/teams.entity";
@@ -24,9 +24,11 @@ export class PlayersService {
         private teamRepo: Repository<Team>,
         @InjectRepository(Positions)
         private positionRepo: Repository<Positions>,
-        private fileManager: FileManager,
-        private fileService: FileService
+        private fileService: FileService,
+        private dataSource: DataSource
     ) { }
+
+
 
     async create(createPlayersDto: CreatePlayersDto, profil_img?: Express.Multer.File, bacc_file?: Express.Multer.File, cin_file?: Express.Multer.File) {
         const team = await this.teamRepo.findOne({
@@ -34,21 +36,33 @@ export class PlayersService {
             where: { id: createPlayersDto.id_teams }
         });
 
+        const positionLimit = await this.dataSource
+            .createQueryBuilder()
+            .select('pl.limits', 'limits')
+            .from('positions_limits', 'pl')
+            .where('pl.id_positions = :id_positions', { id_positions: createPlayersDto.id_positions })
+            .andWhere('pl.id_teams = :id_teams', { id_teams: createPlayersDto.id_teams })
+            .getRawOne();
+
         const position = await this.positionRepo.findOne({
             where: { id_positions: createPlayersDto.id_positions }
         });
 
         if (!team) {
             throw new NotFoundException(`Team with ID ${createPlayersDto.id_teams} not found`);
-        } else if (team?.players.length == 15) {
-            return {
-                code: 1,
-                message: 'You already have 15 members. Please remove one if you wish to add another player to your team.'
-            }
         }
 
         if (!position) {
             throw new NotFoundException(`Position with ID ${createPlayersDto.id_positions} not found`);
+        }
+
+        const id_positions = Number(createPlayersDto.id_positions);
+        
+        if (positionLimit && team.players.filter(p => p.id_positions == id_positions).length >= positionLimit.limits) {
+            return {
+                code: 1,
+                message: `You already have ${positionLimit.limits} members. Please remove one if you wish to add another ${position.name} to your team.`
+            };
         }
 
         let profilUrl = '';
