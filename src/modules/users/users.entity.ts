@@ -24,6 +24,9 @@ export class User {
   @Column({ length: 100, unique: true })
   phone_number: string;
 
+  @Column({type: 'boolean'})
+  canModify: boolean;
+
   @Column({ length: 100 })
   password: string;
 

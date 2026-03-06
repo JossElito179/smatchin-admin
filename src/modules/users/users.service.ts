@@ -239,7 +239,8 @@ L'équipe Check Event`;
                 id: true,
                 name: true,
                 role: true,
-                isStaff: true
+                isStaff: true,
+                canModify: true
             }
         });
     }

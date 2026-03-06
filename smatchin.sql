@@ -45,11 +45,12 @@ CREATE TABLE
         id_pl INT AUTO_INCREMENT PRIMARY KEY,
         id_positions INT NOT NULL,
         id_teams INT NOT NULL,
-        limits INT, 
+        limits INT,
         FOREIGN KEY (id_positions) REFERENCES positions (id_positions) ON DELETE CASCADE,
         FOREIGN KEY (id_teams) REFERENCES teams (id_teams) ON DELETE CASCADE
     ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
-    -- Create players table
+
+-- Create players table
 CREATE TABLE
     players (
         id_players INT AUTO_INCREMENT PRIMARY KEY,
@@ -160,14 +161,24 @@ VALUES
     (9, 'Les Spurs', NULL, true, 3),
     (10, 'Equipe des staffs', NULL, true, 1);
 
+INSERT INTO
+    positions_limits (id_teams, id_positions, limits)
+VALUES
+    (81, 5, 30),
+    (82, 5, 30),
+    (83, 5, 30),
+    (86, 5, 60),
+    (85, 5, 30),
+    (84, 5, 30),
+    (97, 5, 15);
 
-INSERT INTO 
-    positions_limits ( id_teams, id_positions, limits )
-VALUES 
-    (1, 1, 15),
-    (1, 2, 2),
-    (1, 3, 3);
-
+select
+    *
+from
+    teams as t
+    join users as u on t.id_users = u.id_users
+where
+    u.isstaff = true
 INSERT INTO
     players (
         id_players,
@@ -550,20 +561,13 @@ VALUES
 
 -- SET
 --     SQL_SAFE_UPDATES = 0;
-
 -- SET
 --     FOREIGN_KEY_CHECKS = 0;
-
 -- DELETE FROM players;
-
 -- DELETE FROM teams;
-
 -- DELETE FROM positions;
-
 -- DELETE FROM users;
-
 -- SET
 --     FOREIGN_KEY_CHECKS = 1;
-
 -- SET
 --     SQL_SAFE_UPDATES = 1;
